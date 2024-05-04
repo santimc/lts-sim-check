@@ -1,0 +1,188 @@
+---
+
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>LTS Sim Checker</title>
+  </head>
+  <body class="m-3">
+    <h1>Check simulation and bisimulation of a Labeled Tansition System</h1>
+    <main>
+      <div class="grid md:grid-cols-2">
+        <div class="flex flex-col m-5 gap-4">
+          <h2>LTS 1°</h2>
+          <div class="flex flex-row gap-2 justify-between">
+            <p>source</p>
+            <input
+              id="source-1"
+              type="text"
+              class="px-3 bg-gray-100 border border-gray-300 rounded-lg"
+            />
+          </div>
+          <div class="flex flex-row gap-2 justify-between">
+            <p>transition</p>
+            <input
+              id="transition-1"
+              type="text"
+              class="px-3 bg-gray-100 border border-gray-300 rounded-lg"
+            />
+          </div>
+          <div class="flex flex-row gap-2 justify-between">
+            <p>target</p>
+            <input
+              id="target-1"
+              type="text"
+              class="px-3 bg-gray-100 border border-gray-300 rounded-lg"
+            />
+          </div>
+          <button class="w-32 bg-green-300 rounded-lg" id="button-1">
+            +
+          </button>
+          <div id="container-1"></div>
+        </div>
+        <div class="flex flex-col m-5 gap-4">
+          <h2>LTS 2°</h2>
+          <div class="flex flex-row gap-2 justify-between">
+            <p>source</p>
+            <input
+              id="source-2"
+              type="text"
+              class="px-3 bg-gray-100 border border-gray-300 rounded-lg"
+            />
+          </div>
+          <div class="flex flex-row gap-2 justify-between">
+            <p>transition</p>
+            <input
+              id="transition-2"
+              type="text"
+              class="px-3 bg-gray-100 border border-gray-300 rounded-lg"
+            />
+          </div>
+          <div class="flex flex-row gap-2 justify-between">
+            <p>target</p>
+            <input
+              id="target-2"
+              type="text"
+              class="px-3 bg-gray-100 border border-gray-300 rounded-lg"
+            />
+          </div>
+          <button class="w-32 bg-green-300 rounded-lg" id="button-2">
+            +
+          </button>
+          <div id="container-2"></div>
+        </div>
+      </div>
+      <div class="flex flex-col items-center gap-4">
+        <h2>Simulation</h2>
+        <input
+          id="relation"
+          type="text"
+          class="px-3 bg-gray-100 border border-gray-300 rounded-lg"
+        />
+        <button class="w-32 bg-slate-600 rounded-lg" id="button-check"
+          >check simulation</button
+        >
+        <p id="simulation-result"></p>
+        <p id="bisimulation-result"></p>
+      </div>
+    </main>
+    <script>
+      import * as d3 from "d3";
+      import { graphviz } from "d3-graphviz";
+      import { checkBisimulation, checkSimulation } from "../scripts/checker";
+      const arrow_1 = [];
+      const arrow_2 = [];
+      const $container_1 = d3.select(`#container-1`);
+
+      const graph_1 = $container_1
+        .graphviz()
+        .transition(() =>
+          d3.transition("main").ease(d3.easeLinear).delay(40).duration(300)
+        )
+        .dot(arrow_to_dot(arrow_1))
+        .render();
+
+      const $container_2 = d3.select(`#container-2`);
+
+      const graph_2 = $container_2
+        .graphviz()
+        .transition(() =>
+          d3.transition("main").ease(d3.easeLinear).delay(40).duration(300)
+        )
+        .dot(arrow_to_dot(arrow_2))
+        .render();
+
+      const $button_1 = document.getElementById("button-1");
+      const $button_2 = document.getElementById("button-2");
+
+      $button_1.addEventListener("click", (e) =>
+        transition_graph(e, 1, graph_1, arrow_1)
+      );
+      $button_2.addEventListener("click", (e) =>
+        transition_graph(e, 2, graph_2, arrow_2)
+      );
+
+      function transition_graph(e, id, graph, arrow) {
+        const $source = document.getElementById(`source-${id}`);
+        const $transition = document.getElementById(`transition-${id}`);
+        const $target = document.getElementById(`target-${id}`);
+
+        if (
+          $source.value === "" ||
+          $transition.value === "" ||
+          $target.value === ""
+        ) {
+          return;
+        }
+
+        arrow.push([$source.value, $transition.value, $target.value]);
+        update_d3_graph(graph, arrow);
+      }
+
+      function arrow_to_dot(arrow) {
+        const nodes = arrow.map(([s, a, t]) => `${s} -> ${t} [label=" ${a}"]`);
+        return `digraph { nodesep=0.5; ${nodes.join("\n")}}`;
+      }
+
+      function update_d3_graph(graph, arrow) {
+        graph
+          .transition(() =>
+            d3.transition("main").ease(d3.easeLinear).delay(40).duration(300)
+          )
+          .dot(arrow_to_dot(arrow))
+          .render();
+      }
+
+      const $button_check = document.getElementById("button-check");
+      const $result = document.getElementById("simulation-result");
+      const $result_bi = document.getElementById("bisimulation-result");
+
+      $button_check.addEventListener("click", (e) => {
+        const relation = document.getElementById("relation").value.split(" ");
+        const formated_relation = [];
+        for (let i = 0; i < relation.length; i += 2) {
+          formated_relation.push([relation[i], relation[i + 1]]);
+        }
+        $result.innerText = checkSimulation(formated_relation, arrow_1, arrow_2)
+          .flatMap((x) => x)
+          .every((x) => x)
+          ? "is a simulation"
+          : "is not a simulation";
+        $result_bi.innerText = checkBisimulation(
+          formated_relation,
+          arrow_1,
+          arrow_2
+        )
+          .flatMap((x) => x)
+          .every((x) => x)
+          ? "is a bisimulation"
+          : "is not a bisimulation";
+      });
+    </script>
+  </body>
+</html>
