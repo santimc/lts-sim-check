@@ -2,9 +2,25 @@
 
 [See the deployed site here](https://santimc.github.io/lts-sim-check/)
 
+## Run locally
+
 ```sh
-npm ci
+pnpm dev
 ```
+
+## How it works
+
+Firt sumbit the two LTS.
+
+After you should summit the simulation as just a list of the states relations, separated by just spaces.
+
+For example if the simulation you want to repesent is:
+
+`R = {(s_0, s_1), (t_0), (t_1)}`
+
+it should be represented as `s_0 s_1 t_0 t_1`
+
+![Example screenshot](screenshot.png)
 
 ## 🚀 Project Structure
 
